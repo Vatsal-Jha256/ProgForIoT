@@ -1,0 +1,14 @@
+# Core ML and FL frameworks
+torch>=1.12.0
+numpy>=1.21.0
+
+# Hardware libraries (Raspberry Pi only)
+# Install these on Raspberry Pi:
+# RPi.GPIO>=0.7.0
+# adafruit-circuitpython-ssd1306>=2.12.0
+# Pillow>=9.0.0
+# adafruit-blinka>=8.0.0
+
+# Note: Hardware libraries are optional and only needed on Raspberry Pi
+# The code will work in mock mode on non-Raspberry Pi systems
+
