@@ -156,16 +156,17 @@ Watch your hardware:
      - Current accuracy
      - Selection status (Selected ✓ / Waiting...)
   
-  🎚️  Servo Motor: Moves when client is selected
-     - RIGHT position = Selected for training
-     - STRAIGHT position = Waiting
+  🎚️  Servo Motor: Visual feedback for FL events
+     - Selection animation when chosen
+     - Round number indication (pulses)
+     - Training animation during processing
+     - Accuracy level indicator
   
-  ⌨️  Keypad Controls:
-     1: FL Status        4: Training Stats    7: Stations
-     2: Navigation       5: Client Info      8: Performance
-     3: Privacy Info     6: Help Menu        0: Refresh
-     *: Toggle Mode      A: Test             B: Quick Status
-     C: Clear            D: Demo Mode        #: Exit
+  ⌨️  Keypad Controls (Row 1: 1,2,3,A not working):
+     4: FL Status        5: Navigation       6: Privacy
+     B: Training Stats  C: Client Info      D: Help Menu
+     7: Stations        8: Performance      9: Toggle
+     *: Quick Status    0: Refresh          #: Exit
 
 The server will:
   1. Select clients for each round (including hardware client)

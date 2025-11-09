@@ -1,12 +1,12 @@
 # Requirements for Full Hardware Demo (FL + Hardware)
-# This includes dependencies for both federated learning and hardware control
+# Simplified for IoT class demo - focuses on hardware flow
 # 
-# The hardware demo runs federated learning with physical hardware, so it needs:
-# 1. ML/FL frameworks (torch, numpy) - REQUIRED for FL client
-# 2. Hardware libraries - REQUIRED on Raspberry Pi, optional elsewhere (mock mode)
+# NOTE: This is a SIMPLIFIED version for IoT class presentation
+# - No actual model training (simulated for smooth hardware flow)
+# - Focus on hardware interactions (OLED, Servo, Keypad)
+# - Coordinated timing for convincing demo performance
 
-# Core ML and FL frameworks (REQUIRED - used by hardware_fl_client.py)
-torch>=1.12.0
+# Core dependencies (simplified - numpy only, torch removed for simplicity)
 numpy>=1.21.0
 
 # Hardware libraries (REQUIRED on Raspberry Pi, optional on other systems)

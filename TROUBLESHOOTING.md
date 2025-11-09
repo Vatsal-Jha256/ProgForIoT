@@ -92,3 +92,4 @@ python3 -u client.py --id vehicle_01
 
 This way you'll see all output directly without any buffering issues.
 
+
