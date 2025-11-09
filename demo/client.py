@@ -12,16 +12,13 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import torch
-import torch.nn as nn
 import numpy as np
 from typing import Dict
 import time
 import socket
 import pickle
 import argparse
-
-from src.models.fmtl_model import create_fedroute_model
+# Simplified for IoT demo - removed torch and model imports
 
 
 class FedRouteClient:
