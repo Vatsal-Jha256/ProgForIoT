@@ -707,15 +707,20 @@ def main():
     
     client = HardwareFLClient(args.id, args.host, args.port)
     
-    # Display startup message
-    client._display_status("FedRoute\nHardware Client\nStarting...", 2)
+    # Don't display on OLED during initialization - keep it blank
+    logger.info("Hardware client initializing (OLED will remain blank until connected)...")
     
     if client.connect():
+        logger.info("✅ Successfully connected to server, starting FL client...")
         client.listen()
     else:
-        logger.error("Failed to connect to server")
+        logger.error("❌ Failed to connect to server after multiple attempts")
+        logger.error("   Make sure the server is running and accessible")
+        logger.error(f"   Server: {args.host}:{args.port}")
+        # Only show error on OLED if connection fails
         client._display_status("Connection\nFailed\nCheck Server", 3)
         client.hardware.cleanup()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
