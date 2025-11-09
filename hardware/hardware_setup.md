@@ -47,7 +47,15 @@ sudo raspi-config
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-smbus i2c-tools
-sudo pip3 install RPi.GPIO adafruit-circuitpython-ssd1306 Pillow
+
+# Install hardware-only dependencies
+cd hardware_demo
+pip3 install -r requirements-hardware.txt
+```
+
+Alternatively, install manually:
+```bash
+pip3 install RPi.GPIO adafruit-circuitpython-ssd1306 Pillow adafruit-blinka
 ```
 
 3. Verify I2C connection:
@@ -93,4 +101,5 @@ After successful hardware testing:
 2. Test federated learning integration
 3. Verify real-time status display
 4. Test interactive keypad controls
+
 

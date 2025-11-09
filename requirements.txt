@@ -1,14 +1,24 @@
-# Core ML and FL frameworks
+# Requirements for Full Hardware Demo (FL + Hardware)
+# This includes dependencies for both federated learning and hardware control
+# 
+# The hardware demo runs federated learning with physical hardware, so it needs:
+# 1. ML/FL frameworks (torch, numpy) - REQUIRED for FL client
+# 2. Hardware libraries - REQUIRED on Raspberry Pi, optional elsewhere (mock mode)
+
+# Core ML and FL frameworks (REQUIRED - used by hardware_fl_client.py)
 torch>=1.12.0
 numpy>=1.21.0
 
-# Hardware libraries (Raspberry Pi only)
-# Install these on Raspberry Pi:
-# RPi.GPIO>=0.7.0
-# adafruit-circuitpython-ssd1306>=2.12.0
-# Pillow>=9.0.0
-# adafruit-blinka>=8.0.0
+# Hardware libraries (REQUIRED on Raspberry Pi, optional on other systems)
+# For hardware-only installation (just the controller), use: requirements-hardware.txt
+RPi.GPIO>=0.7.0
+adafruit-circuitpython-ssd1306>=2.12.0
+Pillow>=9.0.0
+adafruit-blinka>=8.0.0
 
-# Note: Hardware libraries are optional and only needed on Raspberry Pi
-# The code will work in mock mode on non-Raspberry Pi systems
+# Note: 
+# - torch and numpy are REQUIRED for the full hardware demo (FL functionality)
+# - Hardware libraries are REQUIRED on Raspberry Pi, but the code will work 
+#   in mock mode on non-Raspberry Pi systems (hardware libraries optional)
+
 

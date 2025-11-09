@@ -22,25 +22,39 @@ See `hardware/hardware_setup.md` for detailed connection instructions.
 
 ## Software Requirements
 
-### On Raspberry Pi:
+### For Hardware Controller Only (Standalone):
+If you only need the hardware controller (`hardware/ev_navigation_hardware.py`):
+```bash
+# Install hardware-only dependencies
+pip3 install -r requirements-hardware.txt
+```
+
+### For Full Demo (FL + Hardware):
+**On Raspberry Pi (Hardware Client):**
 ```bash
 # Install system packages
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-smbus i2c-tools
 
-# Install Python packages
-pip3 install torch numpy
-pip3 install RPi.GPIO adafruit-circuitpython-ssd1306 Pillow adafruit-blinka
+# Install ALL dependencies (torch, numpy, + hardware libraries)
+pip3 install -r requirements.txt
 
 # Enable I2C
 sudo raspi-config
 # Select Interface Options > I2C > Enable
 ```
 
+**Note:** `requirements.txt` includes both torch/numpy (for FL) AND hardware libraries. 
+The hardware client runs torch on Raspberry Pi to train models locally.
+
 ### On Non-Raspberry Pi Systems:
 The demo will run in mock mode (no hardware required):
 ```bash
+# For full demo (FL + mock hardware)
 pip3 install torch numpy
+
+# For hardware controller only (mock mode)
+# No additional packages needed - uses standard library only
 ```
 
 ## Directory Structure
@@ -64,22 +78,107 @@ hardware_demo/
         └── fmtl_model.py
 ```
 
+## Architecture: What Runs Where?
+
+### Components Overview
+
+1. **FL Server** (`demo/server.py`)
+   - Runs on: **Any machine** (can be Raspberry Pi or separate computer)
+   - Needs: `torch`, `numpy`
+   - Purpose: Coordinates federated learning, aggregates model updates
+
+2. **Hardware FL Client** (`demo/hardware_fl_client.py`)
+   - Runs on: **Raspberry Pi** (with physical hardware connected)
+   - Needs: `torch`, `numpy` + hardware libraries (`RPi.GPIO`, `adafruit-ssd1306`, etc.)
+   - Purpose: Participates in FL, displays status on OLED, controls servo/keypad
+   - **YES, torch runs on Raspberry Pi** - the client trains models locally using torch
+
+3. **Software FL Clients** (`demo/client.py`)
+   - Runs on: **Any machine** (optional, for comparison)
+   - Needs: `torch`, `numpy`
+   - Purpose: Additional clients to demonstrate multi-client FL
+
+### Typical Setup Options
+
+**Option 1: Everything on Raspberry Pi** (Recommended for demo)
+- Server + Hardware Client + Software Clients all on same Pi
+- Simple setup, good for demonstrations
+
+**Option 2: Distributed Setup**
+- Server on separate machine (laptop/desktop)
+- Hardware Client on Raspberry Pi
+- Software Clients on any machines
+- More realistic distributed FL scenario
+
 ## Quick Start
 
-1. **Setup Hardware** (Raspberry Pi only):
-   - Follow instructions in `hardware/hardware_setup.md`
-   - Verify connections with `python3 hardware/ev_navigation_hardware.py`
+### Step 1: Install Dependencies
 
-2. **Run the Demo**:
-   ```bash
-   cd hardware_demo/demo
-   python3 run_hardware_demo.py
-   ```
+**On Raspberry Pi (for Hardware Client):**
+```bash
+# Install system packages
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-smbus i2c-tools
 
-3. **Watch the Hardware**:
-   - OLED display shows FL status in real-time
-   - Servo motor moves when client is selected
-   - Use keypad for interactive controls
+# Install all dependencies (torch + hardware libraries)
+pip3 install -r requirements.txt
+
+# Enable I2C interface
+sudo raspi-config
+# Select: Interface Options > I2C > Enable
+```
+
+**On Server Machine (if different from Pi):**
+```bash
+# Install only FL dependencies
+pip3 install torch numpy
+```
+
+### Step 2: Setup Hardware (Raspberry Pi only)
+- Follow instructions in `hardware/hardware_setup.md`
+- Verify connections:
+  ```bash
+  cd hardware_demo/hardware
+  python3 ev_navigation_hardware.py
+  ```
+
+### Step 3: Run the Demo
+
+**Option A: All-in-One (Everything on Raspberry Pi)**
+```bash
+cd hardware_demo/demo
+python3 run_hardware_demo.py
+```
+This automatically starts:
+- FL Server
+- Hardware FL Client (with OLED, Servo, Keypad)
+- 3 additional software clients
+
+**Option B: Manual Setup (Distributed)**
+
+Terminal 1 - Start Server:
+```bash
+cd hardware_demo/demo
+python3 server.py
+```
+
+Terminal 2 - Start Hardware Client (on Raspberry Pi):
+```bash
+cd hardware_demo/demo
+python3 hardware_fl_client.py --id vehicle_00 --host <server-ip>
+```
+
+Terminal 3+ - Start Software Clients (optional):
+```bash
+cd hardware_demo/demo
+python3 client.py --id vehicle_01 --host <server-ip>
+python3 client.py --id vehicle_02 --host <server-ip>
+```
+
+### Step 4: Watch the Hardware
+- **OLED Display**: Shows FL status in real-time (round, accuracy, selection)
+- **Servo Motor**: Moves when client is selected for training
+- **Keypad**: Interactive controls (see Keypad Controls below)
 
 ## Keypad Controls
 
@@ -142,4 +241,5 @@ For issues or questions:
 1. Check `hardware/hardware_setup.md` for hardware troubleshooting
 2. Review demo output for error messages
 3. Ensure all dependencies are installed correctly
+
 

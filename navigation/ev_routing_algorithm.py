@@ -265,3 +265,4 @@ class EVRoutingAlgorithm:
         else:  # 225 <= heading < 315
             return "LEFT"  # West
 
+

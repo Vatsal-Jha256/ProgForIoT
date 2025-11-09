@@ -379,3 +379,4 @@ def create_fedroute_model(config: Dict) -> FedRouteFMTL:
         dropout_rate=config.get('dropout_rate', 0.2)
     )
 
+
