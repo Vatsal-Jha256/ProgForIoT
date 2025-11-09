@@ -120,8 +120,11 @@ try:
         bufsize=1
     )
     processes.append(('Hardware Client', hardware_client_process))
-    time.sleep(4)  # Give hardware client more time to initialize and bind socket
+    time.sleep(5)  # Give hardware client more time to connect to server
     print("   ✅ Hardware client started")
+    
+    # Check if hardware client connected successfully
+    time.sleep(2)  # Give it time to connect
     
     # Optional: Start additional software clients for comparison
     print("\n[Optional] Starting additional software clients...")
@@ -137,9 +140,11 @@ try:
             bufsize=1
         )
         processes.append((client_id, client_process))
-        time.sleep(1)  # Give each client time to bind their socket
+        time.sleep(2)  # Give each client time to connect to server
     
-    print(f"   ✅ {num_software_clients} additional clients started\n")
+    print(f"   ✅ {num_software_clients} additional clients started")
+    print("   ⏳ Waiting for all clients to connect to server...\n")
+    time.sleep(3)  # Extra time for all clients to register
     
     print("="*70)
     print("🎉 HARDWARE DEMO RUNNING!")

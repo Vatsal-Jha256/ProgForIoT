@@ -313,8 +313,18 @@ def main():
     clients_per_round = 4
     
     # Wait for clients to connect and set up their listen sockets
-    print("\nWaiting for clients to connect and initialize (15 seconds)...")
-    time.sleep(15)  # Give clients more time to set up listen sockets
+    print("\nWaiting for clients to connect and initialize (20 seconds)...")
+    print(f"Current clients registered: {len(server.clients)}")
+    
+    # Wait with periodic status updates
+    for i in range(20):
+        time.sleep(1)
+        if len(server.clients) > 0:
+            print(f"   {len(server.clients)} client(s) connected...")
+    
+    print(f"\n✅ Total clients registered: {len(server.clients)}")
+    if len(server.clients) == 0:
+        print("⚠️  WARNING: No clients connected! Check client logs for errors.")
     
     try:
         for round_idx in range(num_rounds):

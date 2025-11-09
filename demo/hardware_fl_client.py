@@ -107,6 +107,9 @@ class HardwareFLClient:
         logger.info(f"✅ Hardware FL Client {client_id} initialized")
         logger.info(f"   Local data samples: {self.num_samples}")
         logger.info(f"   Privacy: Data stays on-device")
+        
+        # Don't display anything on OLED until we're actually ready
+        # (OLED will be blank during initialization)
     
     def _generate_local_data(self) -> Dict:
         """Generate synthetic local training data (private vehicle data)."""
@@ -154,16 +157,18 @@ class HardwareFLClient:
                 client_socket.close()
                 
                 if ack['status'] == 'connected':
-                    self._display_status("Connected to\nFL Server")
+                    # Only display on OLED after successful connection
+                    self._display_status("Connected to\nFL Server", duration=1.5)
                     logger.info(f"✅ Connected to server")
                     return True
                 
             except Exception as e:
                 if attempt < max_retries - 1:
-                    logger.info(f"⏳ Connection attempt {attempt+1}/{max_retries}...")
+                    logger.info(f"⏳ Connection attempt {attempt+1}/{max_retries}... (Error: {e})")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(f"❌ Failed to connect: {e}")
+                    logger.error(f"❌ Failed to connect after {max_retries} attempts: {e}")
+                    logger.error(f"   Server: {self.server_host}:{self.server_port}")
                     self._display_status("Connection\nFailed")
                     return False
         
@@ -244,7 +249,8 @@ class HardwareFLClient:
     def listen(self):
         """Listen for training requests from server."""
         logger.info(f"👂 Listening for training requests on port {self.listen_port}...")
-        self._display_status("Listening for\nFL Server...")
+        # Don't display on OLED yet - wait until we actually start receiving requests
+        # This keeps OLED blank during initialization
         
         # Create socket to receive training requests
         listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -266,6 +272,11 @@ class HardwareFLClient:
             while True:
                 try:
                     client_socket, _ = listen_socket.accept()
+                    
+                    # NOW display on OLED - we're actually starting FL
+                    # First time we receive a request, show we're ready
+                    if self.current_round == 0:
+                        self._display_status("FL Ready\nWaiting for\nRound 1...", duration=2)
                     
                     # Receive training request
                     size_bytes = client_socket.recv(4)
@@ -349,59 +360,58 @@ class HardwareFLClient:
     
     def _monitor_keypad(self):
         """Monitor keypad for user interaction."""
+        # Check which keypad rows actually work
+        # If Row 1 (index 0) doesn't work, skip keys 1, 2, 3, A
+        non_working_keys = []
+        if hasattr(self.hardware, 'working_rows') and self.hardware.working_rows:
+            if 0 not in self.hardware.working_rows:  # Row 1 (index 0) doesn't work
+                non_working_keys = ['1', '2', '3', 'A']
+                logger.info("⚠️  Keypad Row 1 (keys 1,2,3,A) not working - these keys will be ignored")
+        
         while True:
             key = self.hardware.read_keypad()
             if key:
+                # Skip non-working keys
+                if key in non_working_keys:
+                    logger.debug(f"Key {key} pressed but Row 1 doesn't work - ignoring")
+                    # Show brief message that key doesn't work
+                    self.hardware.display_message(f"Key {key}\nNot Available\nRow 1 Issue")
+                    time.sleep(1.5)
+                    continue
+                    
                 logger.info(f"Keypad key pressed: {key}")
-                if key == '1':
-                    # Show FL status
+                # NOTE: Keys 1, 2, 3, A are from Row 1 which doesn't work - IGNORED
+                # Remapped keys to working rows:
+                # 4 = FL Status (was 1), 5 = Navigation (was 2), 6 = Privacy (was 3)
+                # B = Training Stats (was 4), C = Client Info (was 5), D = Help (was 6)
+                # 7 = Stations, 8 = Performance, 9 = Toggle (was *), * = Quick Status
+                # 0 = Refresh, # = Exit
+                
+                if key == '4':  # FL Status (remapped from 1)
                     self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
-                elif key == '2':
-                    # Show navigation demo using FL model
+                elif key == '5':  # Navigation (remapped from 2)
                     self._demo_navigation()
-                elif key == '3':
-                    # Show privacy info
+                elif key == '6':  # Privacy Info (remapped from 3)
                     self._display_privacy_info()
-                elif key == '4':
-                    # Show training statistics
+                elif key == 'B':  # Training Stats (remapped from 4)
                     self._display_training_stats()
-                elif key == '5':
-                    # Show client information
+                elif key == 'C':  # Client Info (remapped from 5)
                     self._display_client_info()
-                elif key == '6':
-                    # Show help menu
+                elif key == 'D':  # Help Menu (remapped from 6)
                     self._display_help_menu()
-                elif key == '7':
-                    # Cycle through charging stations
+                elif key == '7':  # Cycle through charging stations
                     self._cycle_stations()
-                elif key == '8':
-                    # Show model performance
+                elif key == '8':  # Show model performance
                     self._display_model_performance()
-                elif key == '*':
-                    # Toggle display mode
+                elif key == '9':  # Toggle display mode (remapped from *)
                     self._toggle_display_mode()
-                elif key == '#':
-                    # Exit
+                elif key == '*':  # Quick status
+                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
+                elif key == '#':  # Exit
                     logger.info("Exit requested via keypad")
                     break
-                elif key == '0':
-                    # Reset/refresh display
+                elif key == '0':  # Reset/refresh display
                     self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
-                elif key == 'A':
-                    # Test keypad - show all keys work
-                    self.hardware.display_message("Keypad Test\nKey A works!")
-                    time.sleep(2)
-                elif key == 'B':
-                    # Quick status
-                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
-                elif key == 'C':
-                    # Clear/reset
-                    self.hardware.display_message("Display\nCleared")
-                    time.sleep(1)
-                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
-                elif key == 'D':
-                    # Demo mode - cycle through features
-                    self._demo_mode()
             time.sleep(0.1)
     
     def _demo_navigation(self):
@@ -480,15 +490,19 @@ class HardwareFLClient:
     def _display_help_menu(self):
         """Display keypad help menu."""
         help_msg = "Keypad Help:\n"
-        help_msg += "1: FL Status\n"
-        help_msg += "2: Navigation\n"
-        help_msg += "3: Privacy Info\n"
-        help_msg += "4: Training Stats\n"
-        help_msg += "5: Client Info\n"
-        help_msg += "6: This Help\n"
+        help_msg += "(Row 1: 1,2,3,A\n"
+        help_msg += " not working)\n"
+        help_msg += "4: FL Status\n"
+        help_msg += "5: Navigation\n"
+        help_msg += "6: Privacy Info\n"
+        help_msg += "B: Training Stats\n"
+        help_msg += "C: Client Info\n"
+        help_msg += "D: This Help\n"
         help_msg += "7: Stations\n"
         help_msg += "8: Performance\n"
-        help_msg += "*: Toggle Mode\n"
+        help_msg += "9: Toggle Mode\n"
+        help_msg += "*: Quick Status\n"
+        help_msg += "0: Refresh\n"
         help_msg += "#: Exit"
         
         self.hardware.display_message(help_msg)

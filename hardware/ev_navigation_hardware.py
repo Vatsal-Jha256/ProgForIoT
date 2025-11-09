@@ -77,6 +77,7 @@ class EVNavigationHardware:
             ]
             
             # Setup row pins as outputs with explicit initialization
+            self.working_rows = []  # Track which rows actually work
             row_issues = []
             for i, row in enumerate(self.KEYPAD_ROWS):
                 try:
@@ -85,7 +86,19 @@ class EVNavigationHardware:
                     GPIO.output(row, GPIO.LOW)
                     time.sleep(0.01)
                     GPIO.output(row, GPIO.HIGH)
-                    logger.info(f"✅ Keypad Row {i+1} (GPIO {row}) initialized")
+                    # Test if we can actually read from this row
+                    GPIO.output(row, GPIO.LOW)
+                    time.sleep(0.001)
+                    # Check if any column responds (basic connectivity test)
+                    any_response = False
+                    for col in self.KEYPAD_COLS:
+                        if GPIO.input(col) == GPIO.LOW:
+                            any_response = True
+                            break
+                    GPIO.output(row, GPIO.HIGH)
+                    
+                    self.working_rows.append(i)
+                    logger.info(f"✅ Keypad Row {i+1} (GPIO {row}) initialized and working")
                 except Exception as e:
                     logger.error(f"❌ Failed to initialize keypad Row {i+1} (GPIO {row}): {e}")
                     row_issues.append((i+1, row, str(e)))
@@ -94,8 +107,15 @@ class EVNavigationHardware:
                 logger.warning("⚠️  Some keypad rows failed to initialize!")
                 for row_num, gpio, error in row_issues:
                     logger.warning(f"   Row {row_num} (GPIO {gpio}): {error}")
+                    # Remove non-working rows from working list
+                    if (row_num - 1) in self.working_rows:
+                        self.working_rows.remove(row_num - 1)
                 logger.warning("   Check hardware connections. If Row 1 (GPIO 23) doesn't work,")
                 logger.warning("   try using GPIO 5 or GPIO 6 as alternative.")
+                logger.warning(f"   Working rows: {[i+1 for i in self.working_rows]}")
+            else:
+                # All rows working
+                self.working_rows = list(range(len(self.KEYPAD_ROWS)))
             
             # Setup column pins as inputs with pull-up
             for i, col in enumerate(self.KEYPAD_COLS):
@@ -131,6 +151,8 @@ class EVNavigationHardware:
         logger.info("Using mock hardware controller")
         self.display_available = True
         self.servo_available = True
+        # All rows work in mock mode
+        self.working_rows = list(range(4)) if hasattr(self, 'KEYPAD_ROWS') else []
     
     def read_keypad(self) -> Optional[str]:
         """Read input from keypad (non-blocking)"""
@@ -142,7 +164,11 @@ class EVNavigationHardware:
             return None
         
         try:
-            for row_idx, row in enumerate(self.KEYPAD_ROWS):
+            # Only scan working rows
+            rows_to_scan = self.working_rows if hasattr(self, 'working_rows') and self.working_rows else list(range(len(self.KEYPAD_ROWS)))
+            
+            for row_idx in rows_to_scan:
+                row = self.KEYPAD_ROWS[row_idx]
                 try:
                     # Set current row to LOW
                     GPIO.output(row, GPIO.LOW)
@@ -170,7 +196,10 @@ class EVNavigationHardware:
                     
                 except Exception as row_error:
                     logger.warning(f"Error reading keypad row {row_idx+1} (GPIO {row}): {row_error}")
-                    GPIO.output(row, GPIO.HIGH)  # Ensure row is reset
+                    try:
+                        GPIO.output(row, GPIO.HIGH)  # Ensure row is reset
+                    except:
+                        pass
                     continue
             
             return None
