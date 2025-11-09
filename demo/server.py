@@ -166,8 +166,13 @@ class FedRouteServer:
                 # Connect to client on their unique listen port
                 client = self.clients[client_id]
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_socket.settimeout(10)
-                client_socket.connect((self.host, client.listen_port))
+                client_socket.settimeout(15)  # Increased timeout
+                # Use client's address from when they connected, or localhost
+                client_address = client.address[0] if client.address else 'localhost'
+                # If address is localhost/127.0.0.1, use localhost for connection
+                if client_address in ('127.0.0.1', 'localhost', '::1'):
+                    client_address = 'localhost'
+                client_socket.connect((client_address, client.listen_port))
                 
                 # Send training request with global model
                 request = {
@@ -307,9 +312,9 @@ def main():
     num_rounds = 15
     clients_per_round = 4
     
-    # Wait for clients to connect
-    print("\nWaiting for clients to connect (10 seconds)...")
-    time.sleep(10)
+    # Wait for clients to connect and set up their listen sockets
+    print("\nWaiting for clients to connect and initialize (15 seconds)...")
+    time.sleep(15)  # Give clients more time to set up listen sockets
     
     try:
         for round_idx in range(num_rounds):

@@ -208,9 +208,13 @@ class HardwareFLClient:
         listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
         try:
-            listen_socket.bind((self.server_host, self.listen_port))
+            # Bind to 0.0.0.0 to accept connections from any interface
+            listen_socket.bind(('0.0.0.0', self.listen_port))
             listen_socket.listen(1)
             listen_socket.settimeout(60)  # Timeout after 60 seconds
+            
+            logger.info(f"✅ Successfully bound to port {self.listen_port}, ready for training requests")
+            time.sleep(0.5)  # Small delay to ensure socket is fully ready
             
             # Start keypad monitoring thread
             keypad_thread = threading.Thread(target=self._monitor_keypad, daemon=True)
