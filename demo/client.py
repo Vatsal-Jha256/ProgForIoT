@@ -40,40 +40,12 @@ class FedRouteClient:
         client_num = int(client_id.split('_')[-1]) if '_' in client_id else 0
         self.listen_port = server_port + 100 + client_num
         
-        # Model configuration (same as server)
-        self.model_config = {
-            'context_input_dim': 10,
-            'context_hidden_dims': [64, 128, 64],
-            'path_hidden_dims': [32, 16],
-            'music_hidden_dims': [32, 16],
-            'num_poi_categories': 10,
-            'num_pois': 100,
-            'num_genres': 10,
-            'num_artists': 100,
-            'num_tracks': 200,
-            'dropout_rate': 0.1
-        }
-        
-        # Local model
-        self.local_model = create_fedroute_model(self.model_config)
-        
-        # Local data (simulated)
+        # Simplified for IoT demo - no model needed
         self.num_samples = np.random.randint(50, 200)
-        self.data = self._generate_local_data()
         
         print(f"🚗 Client {self.client_id} initialized ({self.num_samples} samples)")
     
-    def _generate_local_data(self) -> Dict:
-        """Generate synthetic local training data."""
-        contexts = torch.randn(self.num_samples, 10)
-        path_labels = torch.randint(0, 10, (self.num_samples,))
-        music_labels = torch.randint(0, 10, (self.num_samples,))
-        
-        return {
-            'contexts': contexts,
-            'path_labels': path_labels,
-            'music_labels': music_labels
-        }
+    # Removed _generate_local_data - not needed for simplified demo
     
     def connect(self) -> bool:
         """Connect to FL server and register."""
@@ -175,70 +147,24 @@ class FedRouteClient:
     
     def train(self, global_model_state: Dict, round_num: int) -> Dict:
         """
-        Perform local training on private data.
-        
-        Args:
-            global_model_state: Global model parameters from server
-            round_num: Current FL round number
-            
-        Returns:
-            Local model update
+        Simulated training for IoT demo - smooth coordinated flow.
         """
-        print(f"\n  🚗 {self.client_id}: Starting local training (Round {round_num})...")
+        print(f"\n  🚗 {self.client_id}: Training (Round {round_num})...")
         
-        # Load global model
-        self.local_model.load_state_dict(global_model_state)
-        self.local_model.train()
+        # Simulate training with smooth timing (2 seconds)
+        time.sleep(2)
         
-        # Optimizer
-        optimizer = torch.optim.Adam(self.local_model.parameters(), lr=0.01)
+        # Simulate improving accuracy
+        base_accuracy = 0.45 + (round_num * 0.03)
+        accuracy = min(0.95, base_accuracy + np.random.uniform(-0.05, 0.05))
+        loss = max(0.1, 1.0 - (round_num * 0.06))
         
-        # Local training (3 epochs)
-        total_loss = 0.0
-        path_correct = 0
-        music_correct = 0
-        
-        for epoch in range(3):
-            outputs = self.local_model(self.data['contexts'])
-            
-            # Compute losses
-            path_loss = nn.CrossEntropyLoss()(
-                outputs['path']['poi_categories'], 
-                self.data['path_labels']
-            )
-            music_loss = nn.CrossEntropyLoss()(
-                outputs['music']['genres'], 
-                self.data['music_labels']
-            )
-            
-            loss = path_loss + music_loss
-            
-            # Backward pass
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.local_model.parameters(), 1.0)
-            optimizer.step()
-            
-            total_loss += loss.item()
-            
-            # Calculate accuracy (last epoch)
-            if epoch == 2:
-                with torch.no_grad():
-                    path_pred = outputs['path']['poi_categories'].argmax(dim=1)
-                    music_pred = outputs['music']['genres'].argmax(dim=1)
-                    path_correct = (path_pred == self.data['path_labels']).sum().item()
-                    music_correct = (music_pred == self.data['music_labels']).sum().item()
-        
-        accuracy = (path_correct + music_correct) / (2 * self.num_samples)
-        avg_loss = total_loss / 3
-        
-        # Simulate training time
-        time.sleep(np.random.uniform(0.5, 1.5))
+        print(f"  ✅ {self.client_id}: Complete (Acc={accuracy:.3f})")
         
         return {
-            'model_state': self.local_model.state_dict(),
+            'model_state': {},  # Empty - simplified demo
             'num_samples': self.num_samples,
-            'loss': avg_loss,
+            'loss': loss,
             'accuracy': accuracy
         }
 

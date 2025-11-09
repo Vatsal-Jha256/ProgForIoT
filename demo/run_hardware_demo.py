@@ -173,7 +173,7 @@ The server will:
   3. Clients train locally (PRIVACY: data stays on-device)
   4. Receive model updates
   5. Aggregate and update global model
-  6. Repeat for 15 rounds
+  6. Repeat for 6 rounds (simplified IoT demo)
 
 """)
     
