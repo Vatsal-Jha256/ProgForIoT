@@ -93,6 +93,15 @@ python3 ev_navigation_hardware.py
 - Check all row and column connections
 - Verify pull-up resistors are working
 - Test each key individually
+- **Row 1 (1,2,3,A) not working**: 
+  - **Common Issue**: GPIO 23 (Pin 16) may be damaged or have connection problems
+  - Verify GPIO 23 (Pin 16) connection - check physical wiring
+  - Check if pin is damaged or shorted
+  - Try re-seating the connection
+  - **Alternative**: If GPIO 23 doesn't work, you can use GPIO 5 (Pin 29) or GPIO 6 (Pin 31) instead
+    - Edit `ev_navigation_hardware.py` and change `KEYPAD_ROWS = [23, ...]` to `KEYPAD_ROWS = [5, ...]` or `[6, ...]`
+  - Run hardware test: `python3 ev_navigation_hardware.py` to see diagnostic messages
+  - The code now includes better error handling and diagnostics for each row
 
 ## Next Steps
 
@@ -101,5 +110,3 @@ After successful hardware testing:
 2. Test federated learning integration
 3. Verify real-time status display
 4. Test interactive keypad controls
-
-

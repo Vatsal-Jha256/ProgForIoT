@@ -156,10 +156,11 @@ Watch your hardware:
      - STRAIGHT position = Waiting
   
   ⌨️  Keypad Controls:
-     1: Show FL Status
-     2: Demo Navigation (using FL model recommendations)
-     3: Show Privacy Information
-     #: Exit client
+     1: FL Status        4: Training Stats    7: Stations
+     2: Navigation       5: Client Info      8: Performance
+     3: Privacy Info     6: Help Menu        0: Refresh
+     *: Toggle Mode      A: Test             B: Quick Status
+     C: Clear            D: Demo Mode        #: Exit
 
 The server will:
   1. Select clients for each round (including hardware client)

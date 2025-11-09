@@ -75,9 +75,16 @@ python3 hardware_fl_client.py --id vehicle_00 --host <server-ip>
 2. **Servo Motor**: Moves when client is selected
 
 3. **Keypad Controls**:
-   - `1`: Show FL Status
-   - `2`: Demo Navigation
-   - `3`: Show Privacy Info
+   - `1`: FL Status
+   - `2`: Navigation Demo
+   - `3`: Privacy Info
+   - `4`: Training Statistics
+   - `5`: Client Information
+   - `6`: Help Menu
+   - `7`: Cycle Stations
+   - `8`: Model Performance
+   - `0`: Refresh Display
+   - `*`: Toggle Mode
    - `#`: Exit
 
 ## ❓ Common Questions

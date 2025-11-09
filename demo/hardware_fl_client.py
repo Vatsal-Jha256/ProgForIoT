@@ -96,10 +96,13 @@ class HardwareFLClient:
         self.is_selected = False
         self.last_accuracy = 0.0
         self.training_active = False
+        self.training_history = []  # Track training rounds
+        self.total_training_count = 0
         
         # Navigation state
         self.current_location = (20.2961, 85.8245)  # Bhubaneswar center
         self.stations = self._get_default_stations()
+        self.current_station_index = 0
         
         logger.info(f"✅ Hardware FL Client {client_id} initialized")
         logger.info(f"   Local data samples: {self.num_samples}")
@@ -188,15 +191,55 @@ class HardwareFLClient:
         self.hardware.display_message(status_msg)
     
     def _update_servo_selection(self, selected: bool):
-        """Update servo motor to indicate selection status."""
+        """Update servo motor to indicate selection status with animation."""
         if selected:
-            # Move servo to indicate selected (RIGHT position)
+            # Animated selection: move right, then center, then left, then center
             self.hardware.set_steering("RIGHT")
-            time.sleep(0.2)
-            self.hardware.set_steering("STRAIGHT")  # Return to center
+            time.sleep(0.15)
+            self.hardware.set_steering("STRAIGHT")
+            time.sleep(0.1)
+            self.hardware.set_steering("LEFT")
+            time.sleep(0.15)
+            self.hardware.set_steering("STRAIGHT")
         else:
             # Keep servo in center (STRAIGHT) when not selected
             self.hardware.set_steering("STRAIGHT")
+    
+    def _animate_servo_training(self):
+        """Animate servo during training to show activity."""
+        # Oscillate servo during training
+        for _ in range(3):
+            self.hardware.set_steering("RIGHT")
+            time.sleep(0.2)
+            self.hardware.set_steering("LEFT")
+            time.sleep(0.2)
+        self.hardware.set_steering("STRAIGHT")
+    
+    def _indicate_round_with_servo(self, round_num: int):
+        """Use servo to indicate round number (1-5 pulses for rounds 1-5, then repeat pattern)."""
+        # Show round number with pulses (max 5 pulses)
+        pulses = min(round_num % 5, 5) if round_num > 0 else 1
+        if pulses == 0:
+            pulses = 5
+        
+        for _ in range(pulses):
+            self.hardware.set_steering("RIGHT")
+            time.sleep(0.1)
+            self.hardware.set_steering("STRAIGHT")
+            time.sleep(0.1)
+    
+    def _indicate_accuracy_with_servo(self, accuracy: float):
+        """Use servo position to indicate accuracy level."""
+        # Map accuracy (0-1) to servo position (LEFT to RIGHT)
+        # 0.0 = LEFT, 0.5 = CENTER, 1.0 = RIGHT
+        if accuracy < 0.3:
+            self.hardware.set_steering("LEFT")
+        elif accuracy < 0.7:
+            self.hardware.set_steering("STRAIGHT")
+        else:
+            self.hardware.set_steering("RIGHT")
+        time.sleep(0.3)
+        self.hardware.set_steering("STRAIGHT")
     
     def listen(self):
         """Listen for training requests from server."""
@@ -247,15 +290,34 @@ class HardwareFLClient:
                         # Display selection status
                         self._display_fl_status(self.current_round, self.last_accuracy, True)
                         self._update_servo_selection(True)
+                        # Indicate round number with servo
+                        self._indicate_round_with_servo(self.current_round)
                         
                         # Perform local training (PRIVACY: data stays on-device)
+                        # Animate servo during training
+                        training_thread = threading.Thread(
+                            target=self._animate_servo_training, 
+                            daemon=True
+                        )
+                        training_thread.start()
                         update = self.train(request['model_state'], request['round'])
                         
-                        # Update accuracy
+                        # Update accuracy and training history
                         self.last_accuracy = update['accuracy']
+                        self.total_training_count += 1
+                        self.training_history.append({
+                            'round': self.current_round,
+                            'accuracy': self.last_accuracy,
+                            'loss': update['loss']
+                        })
+                        # Keep only last 10 rounds in history
+                        if len(self.training_history) > 10:
+                            self.training_history.pop(0)
                         
                         # Display updated status
                         self._display_fl_status(self.current_round, self.last_accuracy, True, False)
+                        # Indicate accuracy level with servo
+                        self._indicate_accuracy_with_servo(self.last_accuracy)
                         
                         # Send update back
                         response = pickle.dumps(update)
@@ -290,6 +352,7 @@ class HardwareFLClient:
         while True:
             key = self.hardware.read_keypad()
             if key:
+                logger.info(f"Keypad key pressed: {key}")
                 if key == '1':
                     # Show FL status
                     self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
@@ -299,9 +362,46 @@ class HardwareFLClient:
                 elif key == '3':
                     # Show privacy info
                     self._display_privacy_info()
+                elif key == '4':
+                    # Show training statistics
+                    self._display_training_stats()
+                elif key == '5':
+                    # Show client information
+                    self._display_client_info()
+                elif key == '6':
+                    # Show help menu
+                    self._display_help_menu()
+                elif key == '7':
+                    # Cycle through charging stations
+                    self._cycle_stations()
+                elif key == '8':
+                    # Show model performance
+                    self._display_model_performance()
+                elif key == '*':
+                    # Toggle display mode
+                    self._toggle_display_mode()
                 elif key == '#':
                     # Exit
+                    logger.info("Exit requested via keypad")
                     break
+                elif key == '0':
+                    # Reset/refresh display
+                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
+                elif key == 'A':
+                    # Test keypad - show all keys work
+                    self.hardware.display_message("Keypad Test\nKey A works!")
+                    time.sleep(2)
+                elif key == 'B':
+                    # Quick status
+                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
+                elif key == 'C':
+                    # Clear/reset
+                    self.hardware.display_message("Display\nCleared")
+                    time.sleep(1)
+                    self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
+                elif key == 'D':
+                    # Demo mode - cycle through features
+                    self._demo_mode()
             time.sleep(0.1)
     
     def _demo_navigation(self):
@@ -346,6 +446,121 @@ class HardwareFLClient:
         
         self.hardware.display_message(privacy_msg)
         time.sleep(4)
+    
+    def _display_training_stats(self):
+        """Display training statistics."""
+        if not self.training_history:
+            stats_msg = "Training Stats:\n"
+            stats_msg += "No training yet\n"
+            stats_msg += f"Rounds: {self.current_round}\n"
+            stats_msg += f"Selected: {self.total_training_count}x"
+        else:
+            avg_acc = sum(h['accuracy'] for h in self.training_history) / len(self.training_history)
+            latest = self.training_history[-1]
+            stats_msg = "Training Stats:\n"
+            stats_msg += f"Rounds: {self.current_round}\n"
+            stats_msg += f"Trained: {self.total_training_count}x\n"
+            stats_msg += f"Avg Acc: {avg_acc:.3f}\n"
+            stats_msg += f"Latest: {latest['accuracy']:.3f}"
+        
+        self.hardware.display_message(stats_msg)
+        time.sleep(4)
+    
+    def _display_client_info(self):
+        """Display client information."""
+        info_msg = f"Client Info:\n"
+        info_msg += f"ID: {self.client_id}\n"
+        info_msg += f"Samples: {self.num_samples}\n"
+        info_msg += f"Port: {self.listen_port}\n"
+        info_msg += f"Server: {self.server_host}"
+        
+        self.hardware.display_message(info_msg)
+        time.sleep(4)
+    
+    def _display_help_menu(self):
+        """Display keypad help menu."""
+        help_msg = "Keypad Help:\n"
+        help_msg += "1: FL Status\n"
+        help_msg += "2: Navigation\n"
+        help_msg += "3: Privacy Info\n"
+        help_msg += "4: Training Stats\n"
+        help_msg += "5: Client Info\n"
+        help_msg += "6: This Help\n"
+        help_msg += "7: Stations\n"
+        help_msg += "8: Performance\n"
+        help_msg += "*: Toggle Mode\n"
+        help_msg += "#: Exit"
+        
+        self.hardware.display_message(help_msg)
+        time.sleep(5)
+    
+    def _cycle_stations(self):
+        """Cycle through available charging stations."""
+        if not self.stations:
+            self.hardware.display_message("No stations\navailable")
+            time.sleep(2)
+            return
+        
+        # Show each station for 3 seconds
+        for i, station in enumerate(self.stations[:3]):  # Show first 3 stations
+            distance = self._calculate_distance(
+                self.current_location,
+                (station['lat'], station['lon'])
+            )
+            self.hardware.display_station_info(
+                station['station_id'],
+                distance,
+                f"Station {i+1}/{min(3, len(self.stations))}"
+            )
+            time.sleep(3)
+    
+    def _display_model_performance(self):
+        """Display model performance metrics."""
+        if not self.training_history:
+            perf_msg = "Model Performance:\n"
+            perf_msg += "No training data\n"
+            perf_msg += "yet available"
+        else:
+            latest = self.training_history[-1]
+            best = max(self.training_history, key=lambda x: x['accuracy'])
+            perf_msg = "Model Performance:\n"
+            perf_msg += f"Current: {latest['accuracy']:.3f}\n"
+            perf_msg += f"Best: {best['accuracy']:.3f}\n"
+            perf_msg += f"Loss: {latest['loss']:.3f}"
+        
+        self.hardware.display_message(perf_msg)
+        time.sleep(4)
+    
+    def _toggle_display_mode(self):
+        """Toggle between different display modes."""
+        # Simple toggle - just refresh the current status
+        self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)
+        time.sleep(1)
+        # Show a brief message
+        self.hardware.display_message("Display\nRefreshed")
+        time.sleep(1)
+    
+    def _demo_mode(self):
+        """Cycle through demo features automatically."""
+        self.hardware.display_message("Demo Mode\nStarting...")
+        time.sleep(1)
+        
+        # Cycle through key features
+        features = [
+            ("FL Status", lambda: self._display_fl_status(self.current_round, self.last_accuracy, self.is_selected)),
+            ("Training Stats", self._display_training_stats),
+            ("Privacy Info", self._display_privacy_info),
+            ("Client Info", self._display_client_info),
+        ]
+        
+        for name, func in features:
+            self.hardware.display_message(f"Demo: {name}")
+            time.sleep(0.5)
+            func()
+            time.sleep(2)
+        
+        self.hardware.display_message("Demo\nComplete")
+        time.sleep(1)
     
     def _find_nearest_station(self, location: Tuple[float, float]):
         """Find nearest charging station."""

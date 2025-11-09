@@ -66,6 +66,7 @@ class EVNavigationHardware:
             logger.info("✅ Servo motor initialized (GPIO 18)")
             
             # Keypad setup (4x4 Matrix)
+            # NOTE: If Row 1 (GPIO 23) doesn't work, try alternative pin like GPIO 5 or GPIO 6
             self.KEYPAD_ROWS = [23, 24, 25, 8]   # GPIO pins
             self.KEYPAD_COLS = [7, 12, 16, 20]   # GPIO pins
             self.KEYPAD_KEYS = [
@@ -75,16 +76,38 @@ class EVNavigationHardware:
                 ['*', '0', '#', 'D']
             ]
             
-            # Setup row pins as outputs
-            for row in self.KEYPAD_ROWS:
-                GPIO.setup(row, GPIO.OUT)
-                GPIO.output(row, GPIO.HIGH)
+            # Setup row pins as outputs with explicit initialization
+            row_issues = []
+            for i, row in enumerate(self.KEYPAD_ROWS):
+                try:
+                    GPIO.setup(row, GPIO.OUT, initial=GPIO.HIGH)
+                    # Test the pin by toggling it
+                    GPIO.output(row, GPIO.LOW)
+                    time.sleep(0.01)
+                    GPIO.output(row, GPIO.HIGH)
+                    logger.info(f"✅ Keypad Row {i+1} (GPIO {row}) initialized")
+                except Exception as e:
+                    logger.error(f"❌ Failed to initialize keypad Row {i+1} (GPIO {row}): {e}")
+                    row_issues.append((i+1, row, str(e)))
+            
+            if row_issues:
+                logger.warning("⚠️  Some keypad rows failed to initialize!")
+                for row_num, gpio, error in row_issues:
+                    logger.warning(f"   Row {row_num} (GPIO {gpio}): {error}")
+                logger.warning("   Check hardware connections. If Row 1 (GPIO 23) doesn't work,")
+                logger.warning("   try using GPIO 5 or GPIO 6 as alternative.")
             
             # Setup column pins as inputs with pull-up
-            for col in self.KEYPAD_COLS:
-                GPIO.setup(col, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            for i, col in enumerate(self.KEYPAD_COLS):
+                try:
+                    GPIO.setup(col, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                    logger.info(f"✅ Keypad Col {i+1} (GPIO {col}) initialized")
+                except Exception as e:
+                    logger.error(f"❌ Failed to initialize keypad Col {i+1} (GPIO {col}): {e}")
             
-            logger.info("✅ Keypad initialized")
+            # Small delay to ensure pins are stable
+            time.sleep(0.1)
+            logger.info("✅ Keypad fully initialized")
             
             # OLED Display (SSD1306) - I2C
             try:
@@ -115,25 +138,40 @@ class EVNavigationHardware:
             # Mock keypad - simulate input
             import random
             if random.random() < 0.05:  # 5% chance
-                return random.choice(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '#', '*'])
+                return random.choice(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '#', '*', 'A', 'B', 'C', 'D'])
             return None
         
         try:
             for row_idx, row in enumerate(self.KEYPAD_ROWS):
-                GPIO.output(row, GPIO.LOW)  # Set current row to LOW
-                
-                for col_idx, col in enumerate(self.KEYPAD_COLS):
-                    if GPIO.input(col) == GPIO.LOW:  # Key is pressed
-                        key = self.KEYPAD_KEYS[row_idx][col_idx]
-                        
-                        # Wait for key release (debounce)
-                        while GPIO.input(col) == GPIO.LOW:
-                            time.sleep(0.01)
-                        
-                        GPIO.output(row, GPIO.HIGH)  # Reset row
-                        return key
-                
-                GPIO.output(row, GPIO.HIGH)  # Reset row
+                try:
+                    # Set current row to LOW
+                    GPIO.output(row, GPIO.LOW)
+                    time.sleep(0.001)  # Small delay for signal to stabilize
+                    
+                    for col_idx, col in enumerate(self.KEYPAD_COLS):
+                        # Read column state
+                        col_state = GPIO.input(col)
+                        if col_state == GPIO.LOW:  # Key is pressed
+                            key = self.KEYPAD_KEYS[row_idx][col_idx]
+                            
+                            # Wait for key release (debounce)
+                            debounce_count = 0
+                            while GPIO.input(col) == GPIO.LOW and debounce_count < 50:
+                                time.sleep(0.01)
+                                debounce_count += 1
+                            
+                            GPIO.output(row, GPIO.HIGH)  # Reset row
+                            logger.debug(f"Keypad key detected: {key} (Row {row_idx+1}, Col {col_idx+1})")
+                            return key
+                    
+                    # Reset row to HIGH
+                    GPIO.output(row, GPIO.HIGH)
+                    time.sleep(0.001)  # Small delay between rows
+                    
+                except Exception as row_error:
+                    logger.warning(f"Error reading keypad row {row_idx+1} (GPIO {row}): {row_error}")
+                    GPIO.output(row, GPIO.HIGH)  # Ensure row is reset
+                    continue
             
             return None
         except Exception as e:
@@ -322,14 +360,38 @@ if __name__ == "__main__":
         
         # Test keypad
         print("\n4. Testing keypad (press keys, # to exit)...")
+        print("   Testing all rows - press keys from each row:")
+        print("   Row 1: 1, 2, 3, A")
+        print("   Row 2: 4, 5, 6, B")
+        print("   Row 3: 7, 8, 9, C")
+        print("   Row 4: *, 0, #, D")
+        print("   Press # to exit")
+        
+        keys_pressed = []
         while True:
             key = hw.read_keypad()
             if key:
-                print(f"   Key pressed: {key}")
-                hw.display_message(f"Key: {key}\nPress # to exit")
+                keys_pressed.append(key)
+                print(f"   ✅ Key pressed: {key} (Total: {len(keys_pressed)})")
+                hw.display_message(f"Key: {key}\nTotal: {len(keys_pressed)}\nPress # to exit")
+                
+                # Test each row
+                if key in ['1', '2', '3', 'A']:
+                    print(f"      ✓ Row 1 working! (GPIO 23)")
+                elif key in ['4', '5', '6', 'B']:
+                    print(f"      ✓ Row 2 working! (GPIO 24)")
+                elif key in ['7', '8', '9', 'C']:
+                    print(f"      ✓ Row 3 working! (GPIO 25)")
+                elif key in ['*', '0', '#', 'D']:
+                    print(f"      ✓ Row 4 working! (GPIO 8)")
+                
                 if key == '#':
                     break
             time.sleep(0.1)
+        
+        print(f"\n   Keypad test complete! Total keys pressed: {len(keys_pressed)}")
+        if len(keys_pressed) > 0:
+            print(f"   Keys tested: {', '.join(set(keys_pressed))}")
         
         print("\n✅ All hardware tests completed!")
         

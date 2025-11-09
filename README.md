@@ -182,10 +182,31 @@ python3 client.py --id vehicle_02 --host <server-ip>
 
 ## Keypad Controls
 
+The keypad provides interactive control during the FL demo:
+
 - **1**: Show FL Status (round, accuracy, selection)
 - **2**: Demo Navigation (using FL model recommendations)
 - **3**: Show Privacy Information
+- **4**: Show Training Statistics (rounds, accuracy history)
+- **5**: Show Client Information (ID, samples, port)
+- **6**: Show Help Menu (this list)
+- **7**: Cycle through Charging Stations
+- **8**: Show Model Performance (current, best accuracy, loss)
+- **0**: Refresh/Reset Display
+- **\***: Toggle Display Mode
+- **A**: Keypad Test (verify keypad works)
+- **B**: Quick Status
+- **C**: Clear/Reset Display
+- **D**: Demo Mode (auto-cycle features)
 - **#**: Exit client
+
+### Servo Motor Indicators
+
+The servo motor provides visual feedback for FL events:
+- **Selection Animation**: Moves right→center→left→center when selected
+- **Round Indication**: Pulses (1-5) to show current round number
+- **Training Animation**: Oscillates during local training
+- **Accuracy Indicator**: Position shows accuracy level (LEFT=low, CENTER=medium, RIGHT=high)
 
 ## Features Demonstrated
 
