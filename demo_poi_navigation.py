@@ -30,20 +30,21 @@ class POINavigationDemo:
             "Airport", "Beach"
         ]
         
-        # NYC POIs with realistic locations and data
+        # NYC POIs with realistic locations, data, and bearing angles
+        # Bearing: 0°=North, 90°=East, 180°=South, 270°=West (mapped to 0-180° servo range)
         self.nyc_pois = [
-            {"name": "Central Park", "category": "Park", "distance": 2.3, "rating": 4.8, "area": "Manhattan"},
-            {"name": "Times Square", "category": "Shopping", "distance": 1.2, "rating": 4.5, "area": "Manhattan"},
-            {"name": "Empire State Bldg", "category": "Museum", "distance": 0.8, "rating": 4.7, "area": "Manhattan"},
-            {"name": "Broadway Theater", "category": "Theater", "distance": 1.5, "rating": 4.9, "area": "Manhattan"},
-            {"name": "AMC Cinema", "category": "Cinema", "distance": 3.1, "rating": 4.4, "area": "Manhattan"},
-            {"name": "NY Public Library", "category": "Library", "distance": 1.8, "rating": 4.6, "area": "Manhattan"},
-            {"name": "JFK Airport", "category": "Airport", "distance": 15.2, "rating": 4.3, "area": "Queens"},
-            {"name": "Coney Island", "category": "Beach", "distance": 12.5, "rating": 4.2, "area": "Brooklyn"},
-            {"name": "Grand Central", "category": "Train Station", "distance": 0.5, "rating": 4.7, "area": "Manhattan"},
-            {"name": "Joe's Pizza", "category": "Restaurant", "distance": 2.1, "rating": 4.6, "area": "Manhattan"},
-            {"name": "MoMA", "category": "Museum", "distance": 2.8, "rating": 4.8, "area": "Manhattan"},
-            {"name": "Brooklyn Bridge", "category": "Park", "distance": 3.5, "rating": 4.9, "area": "Brooklyn"},
+            {"name": "Central Park", "category": "Park", "distance": 2.3, "rating": 4.8, "area": "Manhattan", "bearing": 45},  # Northeast
+            {"name": "Times Square", "category": "Shopping", "distance": 1.2, "rating": 4.5, "area": "Manhattan", "bearing": 0},  # North
+            {"name": "Empire State Bldg", "category": "Museum", "distance": 0.8, "rating": 4.7, "area": "Manhattan", "bearing": 90},  # East
+            {"name": "Broadway Theater", "category": "Theater", "distance": 1.5, "rating": 4.9, "area": "Manhattan", "bearing": 135},  # Southeast
+            {"name": "AMC Cinema", "category": "Cinema", "distance": 3.1, "rating": 4.4, "area": "Manhattan", "bearing": 180},  # South
+            {"name": "NY Public Library", "category": "Library", "distance": 1.8, "rating": 4.6, "area": "Manhattan", "bearing": 22},  # North-Northeast
+            {"name": "JFK Airport", "category": "Airport", "distance": 15.2, "rating": 4.3, "area": "Queens", "bearing": 90},  # East
+            {"name": "Coney Island", "category": "Beach", "distance": 12.5, "rating": 4.2, "area": "Brooklyn", "bearing": 180},  # South
+            {"name": "Grand Central", "category": "Train Station", "distance": 0.5, "rating": 4.7, "area": "Manhattan", "bearing": 45},  # Northeast
+            {"name": "Joe's Pizza", "category": "Restaurant", "distance": 2.1, "rating": 4.6, "area": "Manhattan", "bearing": 67},  # East-Northeast
+            {"name": "MoMA", "category": "Museum", "distance": 2.8, "rating": 4.8, "area": "Manhattan", "bearing": 112},  # East-Southeast
+            {"name": "Brooklyn Bridge", "category": "Park", "distance": 3.5, "rating": 4.9, "area": "Brooklyn", "bearing": 157},  # South-Southeast
         ]
         
         # NYC music genres and tracks (based on NYC music data)
@@ -143,13 +144,16 @@ class POINavigationDemo:
             "Time: Afternoon\n"
             "Traffic: Moderate"
         )
-        self.hardware.servo_animation(90, 135, 8, 0.03)
+        # Servo sweeps to show analysis in progress
+        self.hardware.servo_animation(45, 135, 8, 0.03)
         time.sleep(2)
         
         self.hardware.display_message(
             "Context Analysis\nComplete\n\n"
             "Using FL model\nfor predictions..."
         )
+        # Return servo to center (ready position)
+        self.hardware.set_servo_angle(90)
         time.sleep(1.5)
     
     def _find_relevant_pois(self):
@@ -181,8 +185,10 @@ class POINavigationDemo:
         
         recommended_pois = recommended_pois[:3]
         
-        # Animate servo
+        # Servo sweeps to show POI search in progress
         self.hardware.servo_animation(135, 45, 10, 0.03)
+        # Return to center after search
+        self.hardware.set_servo_angle(90)
         time.sleep(1)
         
         return recommended_pois
@@ -230,48 +236,87 @@ class POINavigationDemo:
                     f"Selected:\n{selected['name']}\n\n"
                     f"Distance: {selected['distance']}km"
                 )
-                self.hardware.servo_animation(90, 180, 10, 0.03)
+                # Point servo in direction of selected POI
+                bearing = selected.get('bearing', 90)
+                self.hardware.servo_animation(90, bearing, 10, 0.03)
                 time.sleep(1.5)
                 return selected
         
         # Default to first POI
-        return pois[0]
+        selected = pois[0]
+        # Point servo in direction of default POI
+        bearing = selected.get('bearing', 90)
+        self.hardware.servo_animation(90, bearing, 10, 0.03)
+        return selected
     
     def _navigate_to_poi(self, poi):
-        """Simulate navigation to POI."""
+        """
+        Simulate navigation to POI with directional servo pointing.
+        Servo acts as a compass, pointing in the direction of the destination.
+        """
+        bearing = poi.get('bearing', 90)  # Direction to POI (0-180°)
+        
         self.hardware.display_message(
             "Starting Navigation\n\n"
             f"Destination:\n{poi['name']}\n"
             f"Distance: {poi['distance']}km"
         )
+        # Point servo in initial direction
+        self.hardware.servo_animation(90, bearing, 10, 0.05)
         time.sleep(1.5)
         
-        # Simulate navigation progress
-        steps = 5
+        # Simulate navigation progress with directional updates
+        steps = 8
+        current_bearing = bearing
+        
         for i in range(steps):
             progress = int((i + 1) / steps * 100)
             distance_remaining = poi['distance'] * (1 - (i + 1) / steps)
             
+            # Simulate slight direction changes during navigation (realistic route adjustments)
+            # Add small variations to simulate turns and route corrections
+            bearing_variation = np.random.uniform(-10, 10)
+            target_bearing = max(0, min(180, bearing + bearing_variation))
+            
             self.hardware.display_message(
                 f"Navigating...\n\n"
                 f"Progress: {progress}%\n"
-                f"Remaining: {distance_remaining:.1f}km"
+                f"Remaining: {distance_remaining:.1f}km\n"
+                f"→ {self._bearing_to_direction(target_bearing)}"
             )
             
-            # Animate servo to show progress
-            angle = 90 + (i + 1) * 18  # 90 to 180 degrees
-            self.hardware.set_servo_angle(angle)
-            time.sleep(0.8)
+            # Smoothly update servo to point in current direction
+            self.hardware.servo_animation(current_bearing, target_bearing, 5, 0.05)
+            current_bearing = target_bearing
+            time.sleep(0.6)
+        
+        # Final approach - point directly at destination
+        self.hardware.servo_animation(current_bearing, bearing, 8, 0.03)
+        time.sleep(0.5)
         
         self.hardware.display_message(
             "Arrived!\n\n"
             f"Welcome to\n{poi['name']}"
         )
         
-        # Success animation
-        self.hardware.servo_animation(180, 0, 15, 0.02)
-        self.hardware.servo_animation(0, 90, 15, 0.02)
+        # Success animation - quick sweep to celebrate arrival
+        self.hardware.servo_animation(bearing, bearing + 30, 5, 0.02)
+        self.hardware.servo_animation(bearing + 30, bearing - 30, 5, 0.02)
+        self.hardware.servo_animation(bearing - 30, bearing, 5, 0.02)
         time.sleep(2)
+    
+    def _bearing_to_direction(self, bearing):
+        """Convert bearing angle to cardinal direction string."""
+        if bearing < 22.5:
+            return "N"
+        elif bearing < 67.5:
+            return "NE"
+        elif bearing < 112.5:
+            return "E"
+        elif bearing < 157.5:
+            return "SE"
+        else:
+            return "S"
     
     def _show_music_recommendations(self, poi):
         """Show music recommendations based on context."""
@@ -294,11 +339,13 @@ class POINavigationDemo:
             f"Track 2: {music_info['tracks'][1]}"
         )
         
-        # Animate servo to music
-        for _ in range(2):
-            self.hardware.servo_animation(45, 135, 8, 0.05)
-            self.hardware.servo_animation(135, 45, 8, 0.05)
+        # Animate servo to music rhythm (gentle back-and-forth)
+        for _ in range(3):
+            self.hardware.servo_animation(60, 120, 6, 0.08)
+            self.hardware.servo_animation(120, 60, 6, 0.08)
         
+        # Return to center after music animation
+        self.hardware.set_servo_angle(90)
         time.sleep(3)
         
         self.hardware.display_message(
@@ -327,9 +374,11 @@ class POINavigationDemo:
             "✓ FL Model Used"
         )
         
-        # Final animation
-        self.hardware.servo_animation(0, 180, 20, 0.02)
-        self.hardware.servo_animation(180, 0, 20, 0.02)
+        # Final celebration animation - full sweep
+        for _ in range(2):
+            self.hardware.servo_animation(0, 180, 20, 0.02)
+            self.hardware.servo_animation(180, 0, 20, 0.02)
+        # Return to center/ready position
         self.hardware.set_servo_angle(90)
         
         time.sleep(3)

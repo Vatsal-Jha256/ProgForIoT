@@ -36,12 +36,15 @@ class FederatedLearningDemo:
         self.hardware.display_message("FedRoute FL Demo\n\nInitializing...")
         time.sleep(1)
         
-        # Animate servo to show initialization
+        # Animate servo to show initialization (sweep to center/ready position)
         self.hardware.servo_animation(0, 90, 10, 0.05)
         
         # Show welcome message
         self.hardware.display_message("Federated Learning\nDemo\n\nPress any key\nto start")
         self.hardware.get_key(timeout=10)
+        
+        # Ensure servo is at center/ready position
+        self.hardware.set_servo_angle(90)
         
         # Run FL rounds
         for round_num in range(1, self.total_rounds + 1):
@@ -96,7 +99,7 @@ class FederatedLearningDemo:
             self.hardware.servo_animation(135, 45, 5, 0.05)
             time.sleep(0.3)
         
-        # Simulate training progress
+        # Simulate training progress with servo showing progress
         training_steps = 5
         for step in range(training_steps):
             progress = int((step + 1) / training_steps * 100)
@@ -105,6 +108,9 @@ class FederatedLearningDemo:
                 f"Training: {progress}%\n"
                 f"Privacy: Active"
             )
+            # Servo angle represents training progress (45° to 135° range)
+            progress_angle = 45 + (progress / 100) * 90
+            self.hardware.set_servo_angle(progress_angle)
             time.sleep(0.3)
         
         # Aggregation
@@ -138,10 +144,12 @@ class FederatedLearningDemo:
             f"Combined: {combined_acc:.3f}"
         )
         
-        # Success animation
+        # Success animation - quick celebration sweep
         self.hardware.servo_animation(90, 180, 10, 0.03)
         self.hardware.servo_animation(180, 0, 10, 0.03)
         self.hardware.servo_animation(0, 90, 10, 0.03)
+        # Return to center/ready position
+        self.hardware.set_servo_angle(90)
         
         time.sleep(2)
     
@@ -160,10 +168,12 @@ class FederatedLearningDemo:
             f"Combined: {final['combined']:.3f}"
         )
         
-        # Celebration animation
+        # Celebration animation - full sweep to celebrate completion
         for _ in range(3):
             self.hardware.servo_animation(0, 180, 15, 0.02)
             self.hardware.servo_animation(180, 0, 15, 0.02)
+        # Return to center/ready position
+        self.hardware.set_servo_angle(90)
         
         time.sleep(2)
         
