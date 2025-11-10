@@ -1,24 +1,13 @@
-# Requirements for Full Hardware Demo (FL + Hardware)
-# Simplified for IoT class demo - focuses on hardware flow
-# 
-# NOTE: This is a SIMPLIFIED version for IoT class presentation
-# - No actual model training (simulated for smooth hardware flow)
-# - Focus on hardware interactions (OLED, Servo, Keypad)
-# - Coordinated timing for convincing demo performance
+# FedRoute Hardware Demo - Standalone Requirements
+# This demo is independent and does not require the parent repo
 
-# Core dependencies (simplified - numpy only, torch removed for simplicity)
-numpy>=1.21.0
-
-# Hardware libraries (REQUIRED on Raspberry Pi, optional on other systems)
-# For hardware-only installation (just the controller), use: requirements-hardware.txt
+# Hardware control (for Raspberry Pi)
 RPi.GPIO>=0.7.0
 adafruit-circuitpython-ssd1306>=2.12.0
 Pillow>=9.0.0
-adafruit-blinka>=8.0.0
 
-# Note: 
-# - torch and numpy are REQUIRED for the full hardware demo (FL functionality)
-# - Hardware libraries are REQUIRED on Raspberry Pi, but the code will work 
-#   in mock mode on non-Raspberry Pi systems (hardware libraries optional)
+# Basic dependencies
+numpy>=1.21.0
 
-
+# Note: For simulation mode, only numpy is required
+# Hardware packages are optional and only needed on Raspberry Pi

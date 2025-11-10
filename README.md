@@ -1,266 +1,305 @@
 # FedRoute Hardware Demo
 
-This directory contains a standalone hardware demonstration of the FedRoute federated learning system, designed to run on Raspberry Pi with physical hardware components.
+A **standalone** hardware demonstration of the FedRoute federated learning system for Internet of Vehicles (IoV). This demo showcases the system's capabilities using physical hardware components: OLED display, servo motor, and keypad.
 
-## Overview
+**⚠️ IMPORTANT: This demo is completely independent** - it does not require or import anything from the parent FedRoute repository. It's designed to run standalone for presentations and demonstrations.
 
-The hardware demo showcases:
-- **Privacy-preserving federated learning** on physical hardware
-- **Real-time status display** on OLED screen
-- **Client selection visualization** using servo motor
-- **Interactive controls** via keypad
-- **Navigation recommendations** using FL model
+## 🎯 Overview
 
-## Hardware Requirements
+This hardware demo provides an interactive demonstration of FedRoute's key features:
 
+1. **Federated Learning Demo**: Complete FL workflow with visual feedback
+2. **POI & Navigation Demo**: NYC-specific POI recommendations with music suggestions
+3. **System Information**: Model architecture and privacy features
+
+**Features:**
+- ✅ Completely standalone - no parent repo dependencies
+- ✅ Fast and simple - perfect for presentations
+- ✅ NYC-specific POI and music data
+- ✅ Simulation mode for testing without hardware
+
+## 🔧 Hardware Requirements
+
+### Components
 - Raspberry Pi (any model with GPIO pins)
-- OLED Display (SSD1306, 128x64, I2C)
+- OLED Display (SSD1306, 128x64)
 - Servo Motor (SG90 or similar)
 - 4x4 Matrix Keypad
 
-See `hardware/hardware_setup.md` for detailed connection instructions.
+### Connections
 
-## Software Requirements
+See `hardware_setup.md` for detailed connection instructions.
 
-### For Hardware Controller Only (Standalone):
-If you only need the hardware controller (`hardware/ev_navigation_hardware.py`):
+**Quick Reference:**
+- **OLED**: I2C (SDA: Pin 3, SCL: Pin 5)
+- **Servo**: GPIO 18 (Pin 12)
+- **Keypad**: 
+  - Rows: GPIO 23, 24, 25, 8
+  - Cols: GPIO 7, 12, 16, 20
+
+**Note**: The 'A' key on the keypad does not work. Use keys 1-9, 0, B, C, #, *.
+
+## 📦 Software Setup
+
+### 1. Install Dependencies
+
 ```bash
-# Install hardware-only dependencies
-pip3 install -r requirements-hardware.txt
-```
-
-### For Full Demo (FL + Hardware):
-**On Raspberry Pi (Hardware Client):**
-```bash
-# Install system packages
+# System packages (Raspberry Pi only)
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-smbus i2c-tools
 
-# Install ALL dependencies (torch, numpy, + hardware libraries)
+# Python packages (standalone - no parent repo needed)
+cd hardware_demo
 pip3 install -r requirements.txt
 
-# Enable I2C
-sudo raspi-config
-# Select Interface Options > I2C > Enable
+# For simulation mode (no hardware), only numpy is needed:
+pip3 install numpy
 ```
 
-**Note:** `requirements.txt` includes both torch/numpy (for FL) AND hardware libraries. 
-The hardware client runs torch on Raspberry Pi to train models locally.
+### 2. Enable I2C
 
-### On Non-Raspberry Pi Systems:
-The demo will run in mock mode (no hardware required):
 ```bash
-# For full demo (FL + mock hardware)
-pip3 install torch numpy
-
-# For hardware controller only (mock mode)
-# No additional packages needed - uses standard library only
+sudo raspi-config
+# Navigate to: Interface Options → I2C → Enable
 ```
 
-## Directory Structure
+### 3. Verify Hardware
+
+```bash
+# Check I2C devices
+sudo i2cdetect -y 1
+# Should show OLED at address 0x3C
+```
+
+## 🚀 Running the Demo
+
+### On Raspberry Pi (Hardware Mode)
+
+**📖 For detailed setup instructions, see [SETUP_RASPBERRY_PI.md](SETUP_RASPBERRY_PI.md)**
+
+Quick start:
+```bash
+cd hardware_demo
+
+# Install dependencies
+pip3 install -r requirements.txt
+
+# Run the demo (NO --simulation flag!)
+python3 main_demo.py
+```
+
+**Important:** Do NOT use `--simulation` flag when running on actual hardware!
+
+### On Development Machine (Simulation Mode)
+
+```bash
+cd hardware_demo
+python3 main_demo.py --simulation
+```
+
+In simulation mode, the demo runs without hardware and uses console input/output instead.
+
+## 🎮 Using the Demo
+
+### Main Menu
+
+The demo starts with an interactive menu:
+
+```
+Main Menu
+
+4. Federated Learning Demo
+5. POI & Navigation Demo
+6. System Information
+
+* = Exit
+```
+
+**Note**: Use keys 4, 5, 6 (keys 1, 2, 3, A don't work on this keypad).
+
+### Navigation
+
+- **Keys 4-6**: Select menu option (1, 2, 3, A don't work)
+- **Key ***: Exit demo
+- **Other keys**: Invalid (ignored)
+
+**Note**: Keys 1, 2, 3, and A do not work on the keypad. Use 4, 5, 6 instead.
+
+### Demo Options
+
+#### Option 1: Federated Learning Demo
+
+Demonstrates the complete federated learning workflow:
+
+1. **Initialization**: Model setup and client connection
+2. **Client Selection**: Multi-objective selection of participants
+3. **Model Broadcast**: Global model distribution
+4. **Local Training**: Privacy-preserving on-device training
+5. **Aggregation**: Secure aggregation with differential privacy
+6. **Results**: Accuracy metrics and privacy summary
+
+**Duration**: ~2-3 minutes
+
+#### Option 2: POI & Navigation Demo
+
+Shows intelligent POI recommendations and music suggestions using **NYC-specific data**:
+
+1. **Context Analysis**: Current location (NYC Manhattan) and conditions
+2. **POI Discovery**: FL model-based POI recommendations (NYC landmarks)
+3. **POI Selection**: Interactive selection (keys 1-3)
+4. **Navigation**: Simulated route guidance to selected POI
+5. **Music Recommendations**: NYC-style music suggestions based on POI category
+6. **Journey Summary**: Complete trip overview
+
+**NYC POIs include**: Central Park, Times Square, Empire State Building, Broadway Theater, MoMA, JFK Airport, Coney Island, and more!
+
+**Duration**: ~2-3 minutes
+
+#### Option 3: System Information
+
+Displays system architecture and features:
+
+1. **Model Information**: Parameters and architecture
+2. **Privacy Features**: Differential privacy guarantees
+3. **System Architecture**: Client-server FL structure
+4. **Key Features**: FedRoute capabilities
+
+**Duration**: ~1-2 minutes
+
+## 🎨 Visual Feedback
+
+### OLED Display
+- Shows menus, status messages, and results
+- Updates in real-time during demos
+- Supports multi-line text
+
+### Servo Motor
+- **Menu Navigation**: Subtle movements
+- **Processing**: Animated during operations
+- **Success**: Celebration animations
+- **Progress**: Visual feedback during long operations
+
+### Keypad
+- Real-time key press detection
+- Debounced input (200ms)
+- Visual feedback on OLED
+
+## 📁 File Structure
 
 ```
 hardware_demo/
-├── README.md                 # This file
-├── requirements.txt          # Python dependencies
-├── demo/                     # Demo scripts
-│   ├── run_hardware_demo.py  # Main launcher
-│   ├── hardware_fl_client.py # Hardware FL client
-│   ├── server.py             # FL server
-│   └── client.py             # Software FL client
-├── hardware/                 # Hardware control
-│   ├── ev_navigation_hardware.py
-│   └── hardware_setup.md
-├── navigation/               # Routing algorithms
-│   └── ev_routing_algorithm.py
-└── src/                      # Model definitions
-    └── models/
-        └── fmtl_model.py
+├── main_demo.py              # Main interactive menu system
+├── hardware_controller.py    # Hardware abstraction layer
+├── demo_federated_learning.py  # Option 1: FL demo
+├── demo_poi_navigation.py    # Option 2: POI & navigation demo
+├── demo_system_info.py       # Option 3: System information
+├── hardware_setup.md         # Hardware connection guide
+└── README.md                 # This file
 ```
 
-## Architecture: What Runs Where?
+## 🔍 Features Demonstrated
 
-### Components Overview
+### Privacy-Preserving Federated Learning
+- ✅ Local data training (data never leaves device)
+- ✅ Differential privacy (ε-DP with noise injection)
+- ✅ Secure aggregation
+- ✅ Client selection based on context similarity
 
-1. **FL Server** (`demo/server.py`)
-   - Runs on: **Any machine** (can be Raspberry Pi or separate computer)
-   - Needs: `torch`, `numpy`
-   - Purpose: Coordinates federated learning, aggregates model updates
+### Intelligent Recommendations
+- ✅ POI recommendations using FL model
+- ✅ Context-aware music suggestions
+- ✅ Real-time inference
+- ✅ Multi-task learning (POI + Music)
 
-2. **Hardware FL Client** (`demo/hardware_fl_client.py`)
-   - Runs on: **Raspberry Pi** (with physical hardware connected)
-   - Needs: `torch`, `numpy` + hardware libraries (`RPi.GPIO`, `adafruit-ssd1306`, etc.)
-   - Purpose: Participates in FL, displays status on OLED, controls servo/keypad
-   - **YES, torch runs on Raspberry Pi** - the client trains models locally using torch
+### System Architecture
+- ✅ FMTL model structure
+- ✅ Privacy guarantees
+- ✅ Federated learning workflow
+- ✅ IoV-specific optimizations
 
-3. **Software FL Clients** (`demo/client.py`)
-   - Runs on: **Any machine** (optional, for comparison)
-   - Needs: `torch`, `numpy`
-   - Purpose: Additional clients to demonstrate multi-client FL
+## 🐛 Troubleshooting
 
-### Typical Setup Options
+### OLED Display Not Working
 
-**Option 1: Everything on Raspberry Pi** (Recommended for demo)
-- Server + Hardware Client + Software Clients all on same Pi
-- Simple setup, good for demonstrations
-
-**Option 2: Distributed Setup**
-- Server on separate machine (laptop/desktop)
-- Hardware Client on Raspberry Pi
-- Software Clients on any machines
-- More realistic distributed FL scenario
-
-## Quick Start
-
-### Step 1: Install Dependencies
-
-**On Raspberry Pi (for Hardware Client):**
 ```bash
-# Install system packages
-sudo apt-get update
-sudo apt-get install -y python3-pip python3-smbus i2c-tools
+# Check I2C connection
+sudo i2cdetect -y 1
 
-# Install all dependencies (torch + hardware libraries)
-pip3 install -r requirements.txt
-
-# Enable I2C interface
+# Verify I2C is enabled
 sudo raspi-config
-# Select: Interface Options > I2C > Enable
+
+# Check wiring (SDA: Pin 3, SCL: Pin 5)
 ```
 
-**On Server Machine (if different from Pi):**
+### Servo Not Moving
+
 ```bash
-# Install only FL dependencies
-pip3 install torch numpy
+# Check power supply (needs 5V)
+# Verify GPIO 18 connection
+# Test with: python3 -c "import RPi.GPIO as GPIO; GPIO.setmode(GPIO.BCM); GPIO.setup(18, GPIO.OUT); pwm = GPIO.PWM(18, 50); pwm.start(7.5)"
 ```
 
-### Step 2: Setup Hardware (Raspberry Pi only)
-- Follow instructions in `hardware/hardware_setup.md`
-- Verify connections:
-  ```bash
-  cd hardware_demo/hardware
-  python3 ev_navigation_hardware.py
-  ```
+### Keypad Not Responding
 
-### Step 3: Run the Demo
-
-**Option A: All-in-One (Everything on Raspberry Pi)**
 ```bash
-cd hardware_demo/demo
-python3 run_hardware_demo.py
+# Check all row/column connections
+# Verify pull-up resistors
+# Test individual keys
 ```
-This automatically starts:
-- FL Server
-- Hardware FL Client (with OLED, Servo, Keypad)
-- 3 additional software clients
 
-**Option B: Manual Setup (Distributed)**
+### Import Errors
 
-Terminal 1 - Start Server:
 ```bash
-cd hardware_demo/demo
-python3 server.py
+# Install missing packages
+pip3 install RPi.GPIO adafruit-circuitpython-ssd1306 pillow
+
+# For simulation mode, no hardware packages needed
+python3 main_demo.py --simulation
 ```
 
-Terminal 2 - Start Hardware Client (on Raspberry Pi):
-```bash
-cd hardware_demo/demo
-python3 hardware_fl_client.py --id vehicle_00 --host <server-ip>
-```
+## 🎓 Educational Value
 
-Terminal 3+ - Start Software Clients (optional):
-```bash
-cd hardware_demo/demo
-python3 client.py --id vehicle_01 --host <server-ip>
-python3 client.py --id vehicle_02 --host <server-ip>
-```
+This demo is designed to:
 
-### Step 4: Watch the Hardware
-- **OLED Display**: Shows FL status in real-time (round, accuracy, selection)
-- **Servo Motor**: Moves when client is selected for training
-- **Keypad**: Interactive controls (see Keypad Controls below)
+1. **Visualize FL Concepts**: See federated learning in action
+2. **Demonstrate Privacy**: Show how data stays local
+3. **Showcase IoV Applications**: Real-world use cases
+4. **Interactive Learning**: Hands-on exploration
 
-## Keypad Controls
+Perfect for:
+- Research presentations
+- Educational demonstrations
+- System validation
+- Proof of concept
 
-The keypad provides interactive control during the FL demo:
+## 📝 Notes
 
-- **1**: Show FL Status (round, accuracy, selection)
-- **2**: Demo Navigation (using FL model recommendations)
-- **3**: Show Privacy Information
-- **4**: Show Training Statistics (rounds, accuracy history)
-- **5**: Show Client Information (ID, samples, port)
-- **6**: Show Help Menu (this list)
-- **7**: Cycle through Charging Stations
-- **8**: Show Model Performance (current, best accuracy, loss)
-- **0**: Refresh/Reset Display
-- **\***: Toggle Display Mode
-- **A**: Keypad Test (verify keypad works)
-- **B**: Quick Status
-- **C**: Clear/Reset Display
-- **D**: Demo Mode (auto-cycle features)
-- **#**: Exit client
+- **Standalone**: This demo is completely independent - no parent repo needed
+- **Fast & Simple**: Designed for quick presentations, not full system simulation
+- **NYC Data**: Uses NYC-specific POIs and music recommendations
+- **Mock Models**: Uses simplified mock models for demonstration (no actual model loading)
+- **Presentation Focus**: Optimized for convincing demonstrations to teachers/audiences
+- All privacy mechanisms are demonstrated conceptually
 
-### Servo Motor Indicators
+## 🤝 Contributing
 
-The servo motor provides visual feedback for FL events:
-- **Selection Animation**: Moves right→center→left→center when selected
-- **Round Indication**: Pulses (1-5) to show current round number
-- **Training Animation**: Oscillates during local training
-- **Accuracy Indicator**: Position shows accuracy level (LEFT=low, CENTER=medium, RIGHT=high)
+To extend the demo:
 
-## Features Demonstrated
+1. Add new demo modules in `demo_*.py` files
+2. Register in `main_demo.py` menu
+3. Use `HardwareController` for hardware access
+4. Follow existing demo patterns
 
-### Privacy-Preserving Learning
-- All training data stays on-device
-- Only model updates (not raw data) are sent to server
-- Demonstrates federated learning principles
+## 📄 License
 
-### Real-Time Visualization
-- **OLED Display**: Shows current FL round, accuracy, and selection status
-- **Servo Motor**: Visual indicator when client is selected for training
-- **Keypad**: Interactive controls for exploring features
+See main project LICENSE file.
 
-### Navigation Integration
-- Uses FL model to recommend charging stations
-- Demonstrates practical application of federated learning
-- Shows how FL improves recommendations over time
+## 🙏 Acknowledgments
 
-## How It Works
+- FedRoute research team
+- Hardware setup based on `hardware_setup.md`
+- Uses Adafruit CircuitPython libraries for OLED
 
-1. **Server** coordinates federated learning across multiple clients
-2. **Hardware Client** connects and displays status on OLED
-3. **Server selects clients** for each round (including hardware client)
-4. **Selected clients train locally** on private data (data never leaves device)
-5. **Model updates** are sent back to server
-6. **Server aggregates** updates using FedAvg
-7. **Process repeats** for multiple rounds
+---
 
-## Troubleshooting
-
-### Hardware Not Detected
-- Check I2C connection: `sudo i2cdetect -y 1`
-- Verify GPIO connections
-- Ensure hardware libraries are installed
-
-### Mock Mode
-- If not on Raspberry Pi, the system automatically uses mock hardware
-- All functionality works, but no physical hardware is used
-- Perfect for testing on development machines
-
-### Connection Issues
-- Ensure server starts before clients
-- Check firewall settings
-- Verify ports 8080-8200 are available
-
-## License
-
-Part of the FedRoute project. See main project README for license information.
-
-## Support
-
-For issues or questions:
-1. Check `hardware/hardware_setup.md` for hardware troubleshooting
-2. Review demo output for error messages
-3. Ensure all dependencies are installed correctly
-
-
+**For questions or issues, please refer to the main project README or open an issue.**
